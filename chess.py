@@ -23,7 +23,6 @@ def game():
             return 0 <= i < 8 and 0 <= j < 8
         
         def __str__(self):
-            # make board prettier
             color = "W" if self.team else "B"
             if self.__class__.__name__ == "Knight":
                 piece = "N"
@@ -66,7 +65,6 @@ def game():
         
         def rem(self, piece):
             self.pieces.remove(piece)
-            print(self.pieces)
         
         def turn(self):
             cols = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7}
@@ -74,13 +72,19 @@ def game():
             start_row, start_col = inp[1], inp[0].lower()
             start_row = 8 - int(start_row)
             start_col = cols[start_col]
+            piece = board[start_row][start_col]
+            while piece == None or not piece.valid_coord(start_row, start_col) or board[start_row][start_col] not in self.pieces:
+                print("NOT VALID. TRY AGAIN")
+                inp = input("start? ")
+                start_row, start_col = inp[1], inp[0].lower()
+                start_row = 8 - int(start_row)
+                start_col = cols[start_col]
+                piece = board[start_row][start_col]
+
             inp2 = input("end? ")
             end_row, end_col = inp2[1], inp2[0].lower()
             end_row = 8 - int(end_row)
             end_col = cols[end_col]
-            # Fix this input later
-            piece = board[start_row][start_col]
-            # check if this piece belongs to player
 
             while not piece.move(end_row, end_col):
                 print("NOT VALID. TRY AGAIN")
@@ -205,7 +209,7 @@ def game():
             s = "  " + s
             print(s)
         space = "    "
-        s = "{}A{}B{}C{}D{}E{}F{}G{}H".format(space, space, space, space, space, space, space, space)
+        s = f"{space}A{space}B{space}C{space}D{space}E{space}F{space}G{space}H"
         print(s)
     
     def play():
