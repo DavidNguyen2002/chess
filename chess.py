@@ -10,7 +10,7 @@ def game():
             self.team = team
         
         def move(self, i, j):
-            if self.can_attack(i, j):
+            if (i, j) in self.get_attackable():
                 board[self.row][self.col] = None
                 self.row, self.col = i, j
                 if board[i][j] != None:
@@ -18,6 +18,9 @@ def game():
                 board[i][j] = self
                 return True
             return False
+
+        def valid_coord(self, i, j):
+            return 0 <= i < 8 and 0 <= j < 8
         
         def __str__(self):
             # make board prettier
@@ -63,22 +66,28 @@ def game():
         
         def rem(self, piece):
             self.pieces.remove(piece)
+            print(self.pieces)
         
         def turn(self):
-            inp = input("start? ").split(",")
-            start_row, start_col = inp[0], inp[1]
-            start_row = int(start_row)
-            start_col = int(start_col)
-            inp2 = input("end? ").split(",")
-            end_row, end_col = inp2[0], inp2[1]
-            end_row = int(end_row)
-            end_col = int(end_col)
+            cols = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7}
+            inp = input("start? ")
+            start_row, start_col = inp[1], inp[0].lower()
+            start_row = 8 - int(start_row)
+            start_col = cols[start_col]
+            inp2 = input("end? ")
+            end_row, end_col = inp2[1], inp2[0].lower()
+            end_row = 8 - int(end_row)
+            end_col = cols[end_col]
             # Fix this input later
             piece = board[start_row][start_col]
             # check if this piece belongs to player
 
-            piece.move(end_row, end_col)
-
+            while not piece.move(end_row, end_col):
+                print("NOT VALID. TRY AGAIN")
+                inp2 = input("end? ")
+                end_row, end_col = inp2[1], inp2[0].lower()
+                end_row = 8 - int(end_row)
+                end_col = cols[end_col]
 
     class King(PlayingPiece):
         def check(self, other):
@@ -86,86 +95,72 @@ def game():
                 if piece.can_attack(self.row, self.col):
                     return True
             return False
-        
-        def can_attack(self, i, j):
-            if (abs(i-self.row) > 1 or abs(j-self.col) > 1) or self.row == self.col:
-                return False
-            if i < 0 or i >= 8 or j < 0 or j >= 8:
-                return False
-            if self.row == i and self.col == j:
-                return False
-            return board[i][j] == None or board[i][j].team != self.team
-        
-        def move(self, i, j):
-            self.row, self.col = i, j
+
+        def get_attackable(self):
+            attack = list()
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if self.valid_coord(i, j) and (board[i][j] == None or board[i][j].team != self.team):
+                        attack.append((i, j))
+            return attack
+
 
     class Bishop(PlayingPiece):
-        def can_attack(self, i, j):
-            return self.bish_attack(i, j)
+        def get_attackable(self):
+            return self.bish_attack()
 
-        def bish_attack(self, i, j):
-            row, col = self.row, self.col
-            if i-row != j-col:
-                return False
-            if row == i and col == j:
-                return False
-            x = -1 if i > row else 1
-            y = -1 if j > col else 1
-            while i + x != row:
-                i += x
-                j += y
-                if board[i][j] != None:
-                    return False
-            i += x
-            j += y
-            return board[i][j] == None or board[i][j].team != self.team
+        def bish_attack(self):
+            attack = list()
+            moves = [(1,1), (1,-1), (-1,-1), (-1,1)]
+            for move in moves:
+                cur_row = self.row + move[0]
+                cur_col = self.col + move[1]
+                while self.valid_coord(cur_row, cur_col) and board[cur_row][cur_col] == None:
+                    attack.append((cur_row, cur_col))
+                    cur_row += move[0]
+                    cur_col += move[1]
+                if self.valid_coord(cur_row, cur_col) and board[cur_row][cur_col].team != self.team:
+                    attack.append((cur_row, cur_col))
+            return attack
+
+
         
     
     class Rook(PlayingPiece):
-        def can_attack(self, i, j):
-            return self.rook_attack(i ,j)
-        
-        def rook_attack(self, i , j):
-            row = self.row
-            col = self.col
-            if row != i and col != j:
-                return False
-            if row == i and col == j:
-                return False
-            if row == i:
-                y = -1 if j > col else 1
-                while j + y != col:
-                    j += y
-                    if board[row][j] != None:
-                        return False
-                j += y
-                return board[row][j] == None or board[row][j].team != self.team
-            else:
-                x = -1 if i > row else 1
-                while i + x != row:
-                    i += x
-                    if board[x][col] != None:
-                        return False
-                i += x
-                return board[i][col] == None or board[i][col].team != self.team
+
+        def get_attackable(self):
+            return self.rook_attack()
+
+        def rook_attack(self):
+            attack = list()
+            moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+            for move in moves:
+                cur_row = self.row + move[0]
+                cur_col = self.col + move[1]
+                while self.valid_coord(cur_row, cur_col) and board[cur_row][cur_col] == None:
+                    attack.append((cur_row, cur_col))
+                    cur_row += move[0]
+                    cur_col += move[1]
+                if self.valid_coord(cur_row, cur_col) and board[cur_row][cur_col].team != self.team:
+                    attack.append((cur_row, cur_col))
+            return attack
             
             
     
     class Queen(Bishop, Rook):
-        def can_attack(self, i, j):
-            return self.rook_attack(i, j) or self.bishop_attack(i, j)
+        def get_attackable(self):
+            return self.rook_attack() + self.bish_attack()
 
     class Knight(PlayingPiece):
-        def can_attack(self, i, j):
-            if i < 0 or i >= 8 or j < 0 or j >= 8:
-                return False
-            if self.row == i and self.col == j:
-                return False
-            x = abs(self.row - i)
-            y = abs(self.col - j)
-            if (x == 2 or x == 1) and (y == 2 or y == 1):
-                return x != y and (board[i][j] == None or board[i][j].team != self.team)
-            return False
+        def get_attackable(self):
+            moves = [(2,1),(1,2),(-1,-2),(-2,-1),(1,-2),(2,-1),(-1,2),(-2,1)]
+            attack = list()
+            for move in moves:
+                cur_row = self.row + move[0]
+                cur_col = self.col + move[1]
+                if self.valid_coord(cur_row, cur_col) and (board[cur_row][cur_col] == None or board[cur_row][cur_col].team != self.team):
+                    attack.append((cur_row, cur_col))
+            return attack
     
     class Pawn(PlayingPiece):
         def __init__(self, row, col, team):
@@ -173,32 +168,45 @@ def game():
             self.col = col
             self.team = team
             self.moved = False
-        
-        def can_attack(self, i, j):
-            if i < 0 or i >= 8 or j < 0 or j >= 8:
-                return False
-            if self.row == i and self.col == j:
-                return False
-            if abs(self.col-j) > 1:
-                return False
-            if self.col - j == 0:
-                if self.team:
-                    if i > self.row:
-                        return False
-                    if (self.moved and i < self.row - 1) or (not self.moved and i < self.row - 2):
-                        return False
-                else:
-                    if i < self.row:
-                        return False
-                    if (self.moved and i > self.row + 1) or (not self.moved and i > self.row + 2):
-                        return False
-                return board[i][j] == None
-            else:
-                return board[i][j].team != self.team
+
+        def get_attackable(self):
+            attack = list()
+            row_dir = -1 if self.team else 1
+            if not self.moved:
+                r = self.row + (row_dir * 2)
+                if board[r][self.col] == None:
+                    attack.append((r, self.col))
+            r = self.row + row_dir
+            if self.valid_coord(r, self.col) and board[r][self.col] == None:
+                attack.append((r, self.col))
+            if self.valid_coord(r, self.col - 1) and board[r][self.col - 1] != None and board[r][self.col - 1].team != self.team:
+                attack.append((r, self.col - 1))
+            if self.valid_coord(r, self.col + 1) and board[r][self.col + 1] != None and board[r][self.col + 1].team != self.team:
+                attack.append((r, self.col + 1))
+            return attack
+
 
     def print_board():
-        for row in board:
-            print(row)
+        s = "-" * 41
+        s = "  " + s
+        print(s)
+        for i in range(8):
+            row = board[i]
+
+            s = "{} |".format(8-i)
+            for x in row:
+                if x:
+                    s += " {} ".format(x)
+                else:
+                    s += "    "
+                s += "|"
+            print(s)
+            s = "-" * 41
+            s = "  " + s
+            print(s)
+        space = "    "
+        s = "{}A{}B{}C{}D{}E{}F{}G{}H".format(space, space, space, space, space, space, space, space)
+        print(s)
     
     def play():
         p1 = Player("w")
