@@ -22,10 +22,10 @@ def game():
         def __str__(self):
             # make board prettier
             color = "W" if self.team else "B"
-            if self.__class__ == "Knight":
+            if self.__class__.__name__ == "Knight":
                 piece = "N"
             else:
-                piece = str(self.__class__)[31]
+                piece = str(self.__class__.__name__)[0]
             return "{}{}".format(color, piece)
         
         def __repr__(self):
