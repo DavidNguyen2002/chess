@@ -8,6 +8,7 @@ def game():
             self.row = row
             self.col = col
             self.team = team
+            self.name = self.__class__.__name__
         
         def move(self, i, j):
             if (i, j) in self.get_attackable():
@@ -21,13 +22,13 @@ def game():
 
         def valid_coord(self, i, j):
             return 0 <= i < 8 and 0 <= j < 8
-        
+
         def __str__(self):
             color = "W" if self.team else "B"
-            if self.__class__.__name__ == "Knight":
+            if self.name == "Knight":
                 piece = "N"
             else:
-                piece = str(self.__class__.__name__)[0]
+                piece = self.name[0]
             return "{}{}".format(color, piece)
         
         def __repr__(self):
@@ -94,18 +95,31 @@ def game():
                 end_col = cols[end_col]
 
     class King(PlayingPiece):
-        def check(self, other):
-            for piece in other.pieces:
-                if piece.can_attack(self.row, self.col):
-                    return True
-            return False
+
+        def get_surrounding(self):
+            li = list()
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if i == 0 and j == 0:
+                        continue
+                    if self.valid_coord(self.row+i, self.col+j):
+                        li.append((self.row+i, self.col+j))
+            return li
 
         def get_attackable(self):
             attack = list()
             for i in range(-1, 2):
                 for j in range(-1, 2):
-                    if self.valid_coord(i, j) and (board[i][j] == None or board[i][j].team != self.team):
-                        attack.append((i, j))
+                    cur_row = self.row + i
+                    cur_col = self.col + j
+                    if self.valid_coord(cur_row, cur_col) and (board[cur_row][cur_col] == None or board[cur_row][cur_col].team != self.team):
+                        for piece in players[not self.team].pieces:
+                            if piece.name == "King":
+                                attack.extend(piece.get_surrounding())
+                            elif (cur_row, cur_col) in piece.get_attackable():
+                                break
+                        else:
+                            attack.append((cur_row, cur_col))
             return attack
 
 
@@ -172,6 +186,7 @@ def game():
             self.col = col
             self.team = team
             self.moved = False
+            self.name = "Pawn"
 
         def get_attackable(self):
             attack = list()
