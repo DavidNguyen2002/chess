@@ -29,7 +29,7 @@ def game():
                 piece = "N"
             else:
                 piece = self.name[0]
-            return "{}{}".format(color, piece)
+            return f"{color}{piece}"
         
         def __repr__(self):
             return self.__str__()
@@ -108,6 +108,7 @@ def game():
 
         def get_attackable(self):
             attack = list()
+            invalid = list()
             for i in range(-1, 2):
                 for j in range(-1, 2):
                     cur_row = self.row + i
@@ -115,11 +116,19 @@ def game():
                     if self.valid_coord(cur_row, cur_col) and (board[cur_row][cur_col] == None or board[cur_row][cur_col].team != self.team):
                         for piece in players[not self.team].pieces:
                             if piece.name == "King":
-                                attack.extend(piece.get_surrounding())
+                                invalid = piece.get_surrounding()
+                            elif piece.name == "Pawn":
+                                temp = board[cur_row][cur_col]
+                                board[cur_row][cur_col] = self
+                                attackable = True if (cur_row, cur_col) in piece.get_attackable() else False
+                                board[cur_row][cur_col] = temp
+                                if attackable:
+                                    break
                             elif (cur_row, cur_col) in piece.get_attackable():
                                 break
                         else:
                             attack.append((cur_row, cur_col))
+            attack = [x for x in attack if x not in invalid]
             return attack
 
 
@@ -187,6 +196,12 @@ def game():
             self.team = team
             self.moved = False
             self.name = "Pawn"
+
+        def move(self, i, j):
+            valid = super().move(i, j)
+            if valid:
+                self.moved = True
+            return valid
 
         def get_attackable(self):
             attack = list()
