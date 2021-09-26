@@ -11,14 +11,27 @@ def game():
             self.name = self.__class__.__name__
         
         def move(self, i, j):
-            if (i, j) in self.get_attackable():
+            if (i, j) in self.get_attackable() and not self.discovered_check(i, j):
                 board[self.row][self.col] = None
                 self.row, self.col = i, j
                 if board[i][j] != None:
                     players[not self.team].rem(board[i][j])
                 board[i][j] = self
+                if players[self.team].check():
+                    other_team = "Black" if self.team else "White"
+                    print(f"{other_team} is in check!")
                 return True
             return False
+
+        def discovered_check(self, i, j):
+            other_player = players[not self.team]
+            board[self.row][self.col] = None
+            temp = board[i][j]
+            board[i][j] = self
+            check = other_player.check()
+            board[self.row][self.col] = self
+            board[i][j] = temp
+            return check
 
         def valid_coord(self, i, j):
             return 0 <= i < 8 and 0 <= j < 8
@@ -94,6 +107,14 @@ def game():
                 end_row = 8 - int(end_row)
                 end_col = cols[end_col]
 
+        def check(self):
+            for piece in self.pieces:
+                for cell in piece.get_attackable():
+                    enemy_piece = board[cell[0]][cell[1]]
+                    if enemy_piece != None and enemy_piece.name == "King":
+                        return True
+            return False
+
     class King(PlayingPiece):
 
         def get_surrounding(self):
@@ -149,9 +170,6 @@ def game():
                 if self.valid_coord(cur_row, cur_col) and board[cur_row][cur_col].team != self.team:
                     attack.append((cur_row, cur_col))
             return attack
-
-
-        
     
     class Rook(PlayingPiece):
 
