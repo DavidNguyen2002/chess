@@ -11,15 +11,13 @@ def game():
             self.name = self.__class__.__name__
         
         def move(self, i, j):
-            if (i, j) in self.get_attackable() and not self.discovered_check(i, j):
+            if (i, j) in self.get_attackable() and not self.discovered_check(i, j) and self.resolve_check(i, j):
                 board[self.row][self.col] = None
                 self.row, self.col = i, j
                 if board[i][j] != None:
                     players[not self.team].rem(board[i][j])
                 board[i][j] = self
-                if players[self.team].check():
-                    other_team = "Black" if self.team else "White"
-                    print(f"{other_team} is in check!")
+                players[self.team].in_check = False
                 return True
             return False
 
@@ -35,6 +33,17 @@ def game():
 
         def valid_coord(self, i, j):
             return 0 <= i < 8 and 0 <= j < 8
+
+        def resolve_check(self, i, j):
+            resolved = True
+            if players[self.team].in_check:
+                temp = board[i][j]
+                board[i][j] = self
+                board[self.row][self.col] = None
+                resolved = not players[not self.team].check()
+                board[i][j] = temp
+                board[self.row][self.col] = None
+            return resolved
 
         def __str__(self):
             color = "W" if self.team else "B"
@@ -76,6 +85,7 @@ def game():
                 board[piece.row][piece.col] = piece
             self.color = True if color == "w" else False
             players[self.color] = self
+            self.in_check = False
         
         def rem(self, piece):
             self.pieces.remove(piece)
@@ -107,6 +117,27 @@ def game():
                 end_row = 8 - int(end_row)
                 end_col = cols[end_col]
 
+            if players[self.color].check():
+                other_team = "Black" if self.color else "White"
+                my_team = "White"if self.color else "Black"
+                if len(players[not self.color].pieces[0].get_attackable()) == 0:
+                    list_of_attacks = players[not self.color].get_check()
+                    if len(list_of_attacks) == 1:
+                        for piece in self.pieces:
+                            for attack in list_of_attacks[0].get_attackable():
+                                if piece.resolve_check(attack[0], attack[1]):
+                                    print(f"{other_team} is in check!")
+                                    players[not self.color].in_check = True
+                                    return True
+                    print_board()
+                    print(f"Checkmate! {my_team} wins!")
+                    return False
+                print(f"{other_team} is in check!")
+                players[not self.color].in_check = True
+            else:
+                players[not self.color].in_check = False
+            return True
+
         def check(self):
             for piece in self.pieces:
                 for cell in piece.get_attackable():
@@ -114,6 +145,15 @@ def game():
                     if enemy_piece != None and enemy_piece.name == "King":
                         return True
             return False
+
+        def get_check(self):
+            li = list()
+            for piece in self.pieces:
+                for coords in piece.get_attackable():
+                    enemy_piece = board[coords[0]][coords[1]]
+                    if enemy_piece != None and enemy_piece.name == "King" and enemy_piece.team != self.color:
+                        li.append(enemy_piece)
+            return li
 
     class King(PlayingPiece):
 
@@ -138,15 +178,13 @@ def game():
                         for piece in players[not self.team].pieces:
                             if piece.name == "King":
                                 invalid = piece.get_surrounding()
-                            elif piece.name == "Pawn":
+                            else:
                                 temp = board[cur_row][cur_col]
                                 board[cur_row][cur_col] = self
                                 attackable = True if (cur_row, cur_col) in piece.get_attackable() else False
                                 board[cur_row][cur_col] = temp
                                 if attackable:
                                     break
-                            elif (cur_row, cur_col) in piece.get_attackable():
-                                break
                         else:
                             attack.append((cur_row, cur_col))
             attack = [x for x in attack if x not in invalid]
@@ -245,10 +283,10 @@ def game():
         for i in range(8):
             row = board[i]
 
-            s = "{} |".format(8-i)
+            s = f"{8-i} |"
             for x in row:
                 if x:
-                    s += " {} ".format(x)
+                    s += f" {x} "
                 else:
                     s += "    "
                 s += "|"
@@ -267,9 +305,11 @@ def game():
         while True:
             #Fix turns 
             print_board()
-            p1.turn()
+            if not p1.turn():
+                break
             print_board()
-            p2.turn()
+            if not p2.turn():
+                break
         
     play()
 game()
