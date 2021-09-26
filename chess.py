@@ -3,13 +3,15 @@ def game():
     board = [[None for x in range(8)] for y in range(8)]
     players = dict()
 
+    # Parent class for all pieces
     class PlayingPiece(object):
         def __init__(self, row, col, team):
             self.row = row
             self.col = col
             self.team = team
             self.name = self.__class__.__name__
-        
+
+        # Moves piece to (i, j) if it is a legal move. Returns true if successful else false.
         def move(self, i, j):
             if (i, j) in self.get_attackable() and not self.discovered_check(i, j) and self.resolve_check(i, j):
                 board[self.row][self.col] = None
@@ -21,6 +23,8 @@ def game():
                 return True
             return False
 
+        # Returns true if a move would lead to a discovered check. Used in 'move' method
+        # to prevent players from putting themselves in check.
         def discovered_check(self, i, j):
             other_player = players[not self.team]
             board[self.row][self.col] = None
@@ -34,6 +38,7 @@ def game():
         def valid_coord(self, i, j):
             return 0 <= i < 8 and 0 <= j < 8
 
+        # Checks if a move would resolve a player's check status
         def resolve_check(self, i, j):
             resolved = True
             if players[self.team].in_check:
@@ -86,13 +91,15 @@ def game():
             self.color = True if color == "w" else False
             players[self.color] = self
             self.in_check = False
-        
+
+        # Used when pieces are captured
         def rem(self, piece):
             self.pieces.remove(piece)
         
         def turn(self):
             cols = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7}
 
+            # Get player input for starting piece and ending location
             def get_input():
                 inp = input("start? ")
                 if inp == "quit":
@@ -130,18 +137,23 @@ def game():
 
             get_input()
 
+            # Check if the move puts other king in check
             if players[self.color].check():
                 other_team = "Black" if self.color else "White"
                 my_team = "White"if self.color else "Black"
                 if len(players[not self.color].pieces[0].get_attackable()) == 0:
                     list_of_attacks = players[not self.color].get_check()
                     if len(list_of_attacks) == 1:
+                        # Loops through all player's pieces to see if any piece can
+                        # block for the king.
                         for piece in self.pieces:
                             for attack in list_of_attacks[0].get_attackable():
                                 if piece.resolve_check(attack[0], attack[1]):
                                     print(f"{other_team} is in check!")
                                     players[not self.color].in_check = True
                                     return True
+                    # If king has no possible moves and more than one attacker is
+                    # putting him in check, it must be checkmate.
                     print_board()
                     print(f"Checkmate! {my_team} wins!")
                     return False
@@ -151,6 +163,7 @@ def game():
                 players[not self.color].in_check = False
             return True
 
+        # Checks (haha pun) to see if the other king is in check.
         def check(self):
             for piece in self.pieces:
                 for cell in piece.get_attackable():
@@ -159,6 +172,7 @@ def game():
                         return True
             return False
 
+        # Returns a list of all pieces attacking enemy king.
         def get_check(self):
             li = list()
             for piece in self.pieces:
@@ -169,7 +183,7 @@ def game():
             return li
 
     class King(PlayingPiece):
-
+        # Returns a list of all surrounding squares around a king.
         def get_surrounding(self):
             li = list()
             for i in range(-1, 2):
@@ -180,6 +194,7 @@ def game():
                         li.append((self.row+i, self.col+j))
             return li
 
+        # Returns list of squares that king can attack/move to.
         def get_attackable(self):
             attack = list()
             invalid = list()
@@ -208,6 +223,7 @@ def game():
         def get_attackable(self):
             return self.bish_attack()
 
+        # Returns list of cells that bishop can attack.
         def bish_attack(self):
             attack = list()
             moves = [(1,1), (1,-1), (-1,-1), (-1,1)]
@@ -227,6 +243,7 @@ def game():
         def get_attackable(self):
             return self.rook_attack()
 
+        # Returns list of cells that rook can attack.
         def rook_attack(self):
             attack = list()
             moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -244,10 +261,13 @@ def game():
             
     
     class Queen(Bishop, Rook):
+        # Returns list of cells that a rook and bishop could both attack if they
+        # were both on the queen's square.
         def get_attackable(self):
             return self.rook_attack() + self.bish_attack()
 
     class Knight(PlayingPiece):
+        # Returns list of cells that knight can attack.
         def get_attackable(self):
             moves = [(2,1),(1,2),(-1,-2),(-2,-1),(1,-2),(2,-1),(-1,2),(-2,1)]
             attack = list()
@@ -259,6 +279,8 @@ def game():
             return attack
     
     class Pawn(PlayingPiece):
+        # Overrides PlayingPiece __init__ method in order to create 'self.moved' as instance
+        # variable. 'self.moved' is used to see whether pawn can move 2 squares.
         def __init__(self, row, col, team):
             self.row = row
             self.col = col
@@ -266,12 +288,14 @@ def game():
             self.moved = False
             self.name = "Pawn"
 
+        # Uses PlayingPiece's 'move' method, but also marks the pawn as already having moved.
         def move(self, i, j):
             valid = super().move(i, j)
             if valid:
                 self.moved = True
             return valid
 
+        # Returns a list of all cells that pawn can attack / move to.
         def get_attackable(self):
             attack = list()
             row_dir = -1 if self.team else 1
@@ -288,7 +312,7 @@ def game():
                 attack.append((r, self.col + 1))
             return attack
 
-
+    # Prints the board (duh)
     def print_board():
         s = "-" * 41
         s = "  " + s
@@ -316,7 +340,6 @@ def game():
         p2 = Player("b")
         
         while True:
-            #Fix turns 
             print_board()
             if not p1.turn():
                 break
