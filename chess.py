@@ -92,30 +92,43 @@ def game():
         
         def turn(self):
             cols = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7}
-            inp = input("start? ")
-            start_row, start_col = inp[1], inp[0].lower()
-            start_row = 8 - int(start_row)
-            start_col = cols[start_col]
-            piece = board[start_row][start_col]
-            while piece == None or not piece.valid_coord(start_row, start_col) or board[start_row][start_col] not in self.pieces:
-                print("NOT VALID. TRY AGAIN")
+
+            def get_input():
                 inp = input("start? ")
+                if inp == "quit":
+                    quit()
+                if len(inp) != 2 or inp[0] not in cols or not inp[1].isnumeric():
+                    get_input()
+                    return
                 start_row, start_col = inp[1], inp[0].lower()
                 start_row = 8 - int(start_row)
                 start_col = cols[start_col]
-                piece = board[start_row][start_col]
+                cell = board[start_row][start_col]
 
-            inp2 = input("end? ")
-            end_row, end_col = inp2[1], inp2[0].lower()
-            end_row = 8 - int(end_row)
-            end_col = cols[end_col]
+                if cell == None or not cell.valid_coord(cell.row, cell.col) or board[cell.row][
+                    cell.col] not in self.pieces:
+                    print("NOT VALID. TRY AGAIN")
+                    get_input()
+                    return
 
-            while not piece.move(end_row, end_col):
-                print("NOT VALID. TRY AGAIN")
                 inp2 = input("end? ")
+                if inp2 == "quit":
+                    quit()
+                if len(inp2) != 2 or inp2[0] not in cols or not inp2[1].isnumeric():
+                    print("NOT VALID. TRY AGAIN")
+                    get_input()
+                    return
+
                 end_row, end_col = inp2[1], inp2[0].lower()
                 end_row = 8 - int(end_row)
                 end_col = cols[end_col]
+
+                if not cell.move(end_row, end_col):
+                    print("NOT VALID. TRY AGAIN")
+                    get_input()
+                    return
+
+            get_input()
 
             if players[self.color].check():
                 other_team = "Black" if self.color else "White"
