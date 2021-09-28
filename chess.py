@@ -293,7 +293,29 @@ def game():
             valid = super().move(i, j)
             if valid:
                 self.moved = True
+                if self.team:
+                    if self.row == 0:
+                        self.promote()
+                else:
+                    if self.row == 7:
+                        self.promote()
             return valid
+
+        # Promotes pawn when it reaches end of board
+        def promote(self):
+            print("What would you like to promote to? ")
+            promote = input("(Q)ueen, K(N)ight, (B)ishop, (R)ook: ")
+            players[self.team].rem(self)
+            if promote == "N":
+                board[self.row][self.col] = Knight(self.row, self.col, self.team)
+            elif promote == "B":
+                board[self.row][self.col] = Bishop(self.row, self.col, self.team)
+            elif promote == "R":
+                board[self.row][self.col] = Rook(self.row, self.col, self.team)
+            else:
+                board[self.row][self.col] = Queen(self.row, self.col, self.team)
+            players[self.team].pieces.append(board[self.row][self.col])
+
 
         # Returns a list of all cells that pawn can attack / move to.
         def get_attackable(self):
